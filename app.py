@@ -34,13 +34,15 @@ if uploaded_file is not None:
         st.write(insights)
 
         # PDF download
-        pdf_bytes = create_pdf(summary, insights, pie_buf)
-        st.download_button(
-            label="Download PDF",
-            data=pdf_bytes,  # ✅ raw bytes
-            file_name="financial_report.pdf",
-            mime="application/pdf"
-        )
+        pdf_file_path = create_pdf(summary, insights, pie_buf)
+        with open(pdf_file_path, "rb") as f:
+            st.download_button(
+                label="Download PDF",
+                data=f.read(),   # Streamlit now reads from actual file
+                file_name="financial_report.pdf",
+                mime="application/pdf"
+            )
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
+
