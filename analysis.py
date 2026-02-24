@@ -1,10 +1,13 @@
-# analysis.py
-
-import pandas as pd
-from openai import OpenAI
 import os
+import pandas as pd
+import matplotlib.pyplot as plt
+from fpdf import FPDF
+from io import BytesIO
+from openai import OpenAI
 
-# Load OpenAI API Key Securely
+# ----------------------------
+# Load OpenAI API Key
+# ----------------------------
 api_key = os.getenv("OPENAI_API_KEY")
 
 if not api_key:
@@ -16,82 +19,99 @@ if not api_key:
 
 client = OpenAI(api_key=api_key)
 
-def analyze_cashflow(file_path):
-    """
-    Reads a CSV of transactions and calculates financial metrics.
-    
-    CSV should have columns:
-    date, description, amount, category
-    """
-    df = pd.read_csv(file_path)
+# ----------------------------
+# Financial Analysis
+# ----------------------------
+def analyze_cashflow(df: pd.DataFrame):
+    df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce")
+    total_income = df[df["Amount"] > 0]["Amount"].sum()
+    total_expenses = df[df["Amount"] < 0]["Amount"].sum()
+    net_cashflow = total_income + total_expenses
 
-    # Calculate revenue, expenses, net cash flow
-    total_revenue = df[df["amount"] > 0]["amount"].sum()
-    total_expenses = df[df["amount"] < 0]["amount"].sum()
-    net_cash_flow = total_revenue + total_expenses
-
-    # Expense breakdown by category
     expense_breakdown = (
-        df[df["amount"] < 0]
-        .groupby("category")["amount"]
+        df[df["Amount"] < 0]
+        .groupby("Category")["Amount"]
         .sum()
         .abs()
         .sort_values(ascending=False)
-        .to_dict()
     )
 
-    # Identify top expense category
-    top_expense_category = max(expense_breakdown, key=expense_breakdown.get)
-
-    # Convert all numeric types to plain Python int for readability
-    summary = {
-        "total_revenue": int(total_revenue),
-        "total_expenses": int(abs(total_expenses)),
-        "net_cash_flow": int(net_cash_flow),
-        "top_expense_category": top_expense_category,
-        "expense_breakdown": {k: int(v) for k, v in expense_breakdown.items()}
+    return {
+        "total_income": total_income,
+        "total_expenses": total_expenses,
+        "net_cashflow": net_cashflow,
+        "expense_breakdown": expense_breakdown
     }
 
-    return summary
-
-
-def generate_ai_insights(summary):
-    """
-    Generates AI-driven financial insights based on metrics.
-    """
+# ----------------------------
+# AI Insight Generator
+# ----------------------------
+def generate_ai_insights(summary: dict):
     prompt = f"""
 You are a financial analyst advising a small business owner.
 
-Based on the following metrics:
-Total Revenue: ${summary['total_revenue']}
-Total Expenses: ${summary['total_expenses']}
-Net Cash Flow: ${summary['net_cash_flow']}
-Top Expense Category: {summary['top_expense_category']}
-Expense Breakdown: {summary['expense_breakdown']}
+Total Income: ${summary['total_income']:,.2f}
+Total Expenses: ${summary['total_expenses']:,.2f}
+Net Cash Flow: ${summary['net_cashflow']:,.2f}
 
-Generate:
-1. A concise cash flow summary (3-4 sentences)
-2. Two potential financial risks
-3. Three actionable optimization recommendations
+Top Expense Categories:
+{summary['expense_breakdown'].to_string()}
 
-Keep it clear and practical.
+Provide:
+1. Short overall financial health summary
+2. One risk or concern
+3. One actionable recommendation
+Keep it concise and professional.
 """
-
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[
+            {"role": "system", "content": "You are a strategic financial advisor."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.7
     )
-
     return response.choices[0].message.content
 
+# ----------------------------
+# Generate Pie Chart
+# ----------------------------
+def generate_expense_pie(expense_breakdown: pd.Series):
+    fig, ax = plt.subplots()
+    ax.pie(
+        expense_breakdown,
+        labels=expense_breakdown.index,
+        autopct="%1.1f%%",
+        startangle=90
+    )
+    ax.set_title("Expense Breakdown by Category")
+    buf = BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight")
+    buf.seek(0)
+    plt.close(fig)
+    return buf
 
-if __name__ == "__main__":
-    # Analyze CSV
-    summary = analyze_cashflow("sample_transactions.csv")
-    print("=== Summary Metrics ===")
-    print(summary)
+# ----------------------------
+# Create PDF Report
+# ----------------------------
+def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO, output_path="financial_report.pdf"):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Financial Summary", ln=True)
 
-    # Generate AI insights
-    insights = generate_ai_insights(summary)
-    print("\n=== AI Insights ===")
-    print(insights)
+    pdf.set_font("Arial", "", 12)
+    pdf.ln(5)
+    pdf.cell(0, 8, f"Total Income: ${summary['total_income']:,.2f}", ln=True)
+    pdf.cell(0, 8, f"Total Expenses: ${summary['total_expenses']:,.2f}", ln=True)
+    pdf.cell(0, 8, f"Net Cash Flow: ${summary['net_cashflow']:,.2f}", ln=True)
+    pdf.ln(5)
+
+    pdf.cell(0, 8, "AI Insights:", ln=True)
+    pdf.multi_cell(0, 8, insights)
+    pdf.ln(5)
+
+    pdf.image(pie_buffer, x=None, y=None, w=150)  # pie chart
+
+    pdf.output(output_path)
+    return output_path
