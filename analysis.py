@@ -71,6 +71,8 @@ Keep it concise and professional.
         ],
         temperature=0.7
     )
+
+    # Access as dict
     return response['choices'][0]['message']['content']
 
 # ----------------------------
@@ -111,9 +113,10 @@ def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO, output_path="f
     pdf.multi_cell(0, 8, insights)
     pdf.ln(5)
 
-    pdf.image(pie_buffer, x=None, y=None, w=150)  # pie chart
+    pdf.image(pie_buffer, x=None, y=None, w=150)
 
     pdf.output(output_path)
     return output_path
+
 
 
