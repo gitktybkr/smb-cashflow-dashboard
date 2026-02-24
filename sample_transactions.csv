@@ -1,0 +1,8 @@
+date,description,amount,category
+2026-01-01,Client Payment,5000,Revenue
+2026-01-05,Office Rent,-2000,Rent
+2026-01-07,Payroll,-3000,Payroll
+2026-01-10,Software Subscription,-500,Software
+2026-01-15,Client Payment,7000,Revenue
+2026-01-18,Utilities,-400,Utilities
+2026-01-20,Marketing Ads,-600,Marketing
