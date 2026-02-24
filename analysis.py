@@ -4,8 +4,17 @@ import pandas as pd
 from openai import OpenAI
 import os
 
-# Initialize OpenAI client safely using environment variable
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Load OpenAI API Key Securely
+api_key = os.getenv("OPENAI_API_KEY")
+
+if not api_key:
+    raise ValueError(
+        "OPENAI_API_KEY is not set. "
+        "If running locally, set your environment variable. "
+        "If deployed, add it to Streamlit Secrets."
+    )
+
+client = OpenAI(api_key=api_key)
 
 def analyze_cashflow(file_path):
     """
