@@ -36,14 +36,16 @@ if uploaded_file is not None:
 
         # PDF download
         st.markdown("<b>Download Report</b>", unsafe_allow_html=True)
-        pdf_buffer = create_pdf(summary, insights, pie_buf)
+        pdf_bytes = create_pdf(summary, insights, pie_buf)
+
         st.download_button(
             label="Download PDF",
-            data=pdf_buffer.getvalue(),
+            data=pdf_bytes,  # Pass raw bytes directly
             file_name="financial_report.pdf",
             mime="application/pdf"
         )
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
+
 
