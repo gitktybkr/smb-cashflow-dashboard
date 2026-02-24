@@ -97,6 +97,7 @@ Keep it concise and professional.
         ],
         temperature=0.7
     )
+
     return response.choices[0].message.content
 
 # ----------------------------
@@ -137,14 +138,9 @@ def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO):
     pdf.multi_cell(0, 8, insights)
     pdf.ln(5)
 
-    # Pie chart
     pie_buffer.seek(0)
     pdf.image(pie_buffer, x=None, y=None, w=150)
 
-    # Instead of writing to a file, get bytes
-    pdf_bytes = pdf.output(dest='S').encode('latin1')
-    return BytesIO(pdf_bytes)
-
-
-
-
+    # Return PDF as raw bytes
+    pdf_bytes = pdf.output(dest="S").encode("latin1")
+    return pdf_bytes
