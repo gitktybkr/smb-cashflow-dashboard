@@ -120,9 +120,6 @@ def generate_expense_pie(expense_breakdown: pd.Series):
 # ----------------------------
 # Create PDF Report
 # ----------------------------
-from fpdf import FPDF
-from io import BytesIO
-
 def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO):
     pdf = FPDF()
     pdf.add_page()
@@ -147,6 +144,7 @@ def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO):
     # Instead of writing to a file, get bytes
     pdf_bytes = pdf.output(dest='S').encode('latin1')
     return BytesIO(pdf_bytes)
+
 
 
 
