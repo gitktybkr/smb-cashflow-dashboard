@@ -39,10 +39,11 @@ if uploaded_file is not None:
         pdf_buffer = create_pdf(summary, insights, pie_buf)
         st.download_button(
             label="Download PDF",
-            data=open(pdf_buffer, "rb").read(),
+            data=pdf_buffer.getvalue(),
             file_name="financial_report.pdf",
             mime="application/pdf"
         )
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
+
