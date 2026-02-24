@@ -120,7 +120,8 @@ def generate_expense_pie(expense_breakdown: pd.Series):
 # ----------------------------
 # Create PDF Report
 # ----------------------------
-def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO, output_path="financial_report.pdf"):
+def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO):
+    pdf_buffer = BytesIO()
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
@@ -137,8 +138,12 @@ def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO, output_path="f
     pdf.multi_cell(0, 8, insights)
     pdf.ln(5)
 
+    # Save pie chart image to PDF
+    pie_buffer.seek(0)
     pdf.image(pie_buffer, x=None, y=None, w=150)
 
-    pdf.output(output_path)
-    return output_path
+    pdf.output(pdf_buffer)
+    pdf_buffer.seek(0)
+    return pdf_buffer
+
 
