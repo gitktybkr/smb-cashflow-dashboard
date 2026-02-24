@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from analysis import analyze_cashflow, generate_ai_insights, generate_expense_pie, create_pdf
-from io import BytesIO
 
 st.set_page_config(page_title="SMB Cash Flow Dashboard", layout="wide")
 st.title("SMB Cash Flow Dashboard")
@@ -35,17 +34,13 @@ if uploaded_file is not None:
         st.write(insights)
 
         # PDF download
-        st.markdown("<b>Download Report</b>", unsafe_allow_html=True)
         pdf_bytes = create_pdf(summary, insights, pie_buf)
-
         st.download_button(
             label="Download PDF",
-            data=pdf_bytes,  # Pass raw bytes directly
+            data=pdf_bytes,  # ✅ raw bytes
             file_name="financial_report.pdf",
             mime="application/pdf"
         )
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
-
-
