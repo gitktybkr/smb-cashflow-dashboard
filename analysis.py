@@ -9,28 +9,54 @@ from openai import OpenAI
 # Load OpenAI API Key
 # ----------------------------
 api_key = os.getenv("OPENAI_API_KEY")
-
 if not api_key:
     raise ValueError(
         "OPENAI_API_KEY is not set. "
         "If running locally, set your environment variable. "
         "If deployed, add it to Streamlit Secrets."
     )
-
 client = OpenAI(api_key=api_key)
+
+# ----------------------------
+# Auto-detect CSV columns
+# ----------------------------
+def detect_columns(df: pd.DataFrame):
+    df_cols = [c.strip().lower() for c in df.columns]
+    column_mapping = {}
+    possible_matches = {
+        "date": ["date", "transaction date", "txn_date", "day"],
+        "category": ["category", "type", "expense type", "cat"],
+        "amount": ["amount", "amt", "value", "debit", "credit"]
+    }
+
+    for logical_name, variants in possible_matches.items():
+        for variant in variants:
+            if variant.lower() in df_cols:
+                column_mapping[logical_name] = df.columns[df_cols.index(variant.lower())]
+                break
+        else:
+            raise ValueError(f"Could not detect column for: {logical_name}")
+
+    return column_mapping
 
 # ----------------------------
 # Financial Analysis
 # ----------------------------
 def analyze_cashflow(df: pd.DataFrame):
-    df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce")
-    total_income = df[df["Amount"] > 0]["Amount"].sum()
-    total_expenses = df[df["Amount"] < 0]["Amount"].sum()
+    mapping = detect_columns(df)
+    amount_col = mapping["amount"]
+    category_col = mapping["category"]
+    date_col = mapping["date"]
+
+    df[amount_col] = pd.to_numeric(df[amount_col], errors="coerce")
+
+    total_income = df[df[amount_col] > 0][amount_col].sum()
+    total_expenses = df[df[amount_col] < 0][amount_col].sum()
     net_cashflow = total_income + total_expenses
 
     expense_breakdown = (
-        df[df["Amount"] < 0]
-        .groupby("Category")["Amount"]
+        df[df[amount_col] < 0]
+        .groupby(df[category_col])[amount_col]
         .sum()
         .abs()
         .sort_values(ascending=False)
@@ -72,7 +98,6 @@ Keep it concise and professional.
         temperature=0.7
     )
 
-    # Access as dict
     return response['choices'][0]['message']['content']
 
 # ----------------------------
@@ -117,6 +142,3 @@ def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO, output_path="f
 
     pdf.output(output_path)
     return output_path
-
-
-
