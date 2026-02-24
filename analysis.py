@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import tempfile
 from fpdf import FPDF
 from io import BytesIO
 from openai import OpenAI
@@ -121,7 +122,9 @@ def generate_expense_pie(expense_breakdown: pd.Series):
 # ----------------------------
 # Create PDF Report
 # ----------------------------
-def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO):
+
+
+def create_pdf(summary: dict, insights: str, pie_buffer):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
@@ -141,6 +144,8 @@ def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO):
     pie_buffer.seek(0)
     pdf.image(pie_buffer, x=None, y=None, w=150)
 
-    # Return PDF as raw bytes
-    pdf_bytes = pdf.output(dest="S").encode("latin1")
-    return pdf_bytes
+    # Create a temporary file
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    pdf.output(temp_file.name)
+    temp_file.close()
+    return temp_file.name
