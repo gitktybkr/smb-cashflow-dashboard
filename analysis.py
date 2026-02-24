@@ -97,8 +97,7 @@ Keep it concise and professional.
         ],
         temperature=0.7
     )
-
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
 # ----------------------------
 # Generate Pie Chart
@@ -142,3 +141,4 @@ def create_pdf(summary: dict, insights: str, pie_buffer: BytesIO, output_path="f
 
     pdf.output(output_path)
     return output_path
+
